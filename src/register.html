@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Register - Gym App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    const API_BASE = 'http://localhost:3000/api';
+    function setToken(t){ t ? localStorage.setItem('token', t) : localStorage.removeItem('token'); }
+    async function apiFetch(path, options = {}) {
+      const headers = options.headers || {};
+      headers['Content-Type'] = 'application/json';
+      const res = await fetch(API_BASE + path, { ...options, headers });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { alert(data.message || 'Error'); throw new Error(data.message || 'Error'); }
+      return data;
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('register-form');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const body = {
+          email: form.email.value,
+          password: form.password.value,
+          name: form.name.value,
+        };
+        try {
+          const data = await apiFetch('/auth/register', {
+            method: 'POST',
+            body: JSON.stringify(body),
+          });
+          setToken(data.token);
+          window.location.href = 'profile.html';
+        } catch (err) {
+          console.error(err);
+        }
+      });
+    });
+  </script>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gray-100">
+  <div class="w-full max-w-md bg-white shadow-lg rounded-xl p-8">
+    <h1 class="text-2xl font-bold mb-6 text-center">Create account</h1>
+    <form id="register-form" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Email</label>
+        <input name="email" type="email" required
+               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-indigo-200" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Password</label>
+        <input name="password" type="password" required
+               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-indigo-200" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Name</label>
+        <input name="name" type="text"
+               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-indigo-200" />
+      </div>
+      <button type="submit"
+              class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
+        Register
+      </button>
+    </form>
+    <p class="mt-4 text-sm text-center">
+      Already have an account?
+      <a href="login.html" class="text-indigo-600 hover:underline">Login</a>
+    </p>
+  </div>
+</body>
+</html>

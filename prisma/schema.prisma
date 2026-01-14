@@ -1,0 +1,168 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// USER & PROFILE
+model User {
+  id              Int       @id @default(autoincrement())
+  email           String    @unique
+  password        String
+  emailVerified  Boolean  @default(false)
+  emailVerifiedAt DateTime?
+  otpCode         String?
+  otpExpiresAt    DateTime?
+  name            String?
+  gender          String?
+  birthDate       DateTime?
+  heightCm        Int?
+  weightKg        Int?
+  experienceLevel String?
+  goal            String?
+  activityLevel   String?
+  healthFlags     String?
+
+  userMissions UserMission[]
+  sessionLogs  UserSessionLog[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+// MASTER EXERCISE
+model Exercise {
+  id          Int     @id @default(autoincrement())
+  name        String
+  muscleGroup String?
+  equipment   String? // bodyweight, barbell, machine, dll
+
+  sessionExercises MissionSessionExercise[]
+  exerciseLogs     UserSessionExerciseLog[]
+}
+
+// MISSION TEMPLATE (CARD)
+model Mission {
+  id              Int     @id @default(autoincrement())
+  title           String
+  description     String?
+  goalType        String // lose_fat, gain_muscle, general_health
+  durationDays    Int
+  sessionsPerWeek Int
+
+  missionSessions MissionSession[]
+  userMissions    UserMission[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+// SESSION TEMPLATE DI DALAM MISSION
+model MissionSession {
+  id        Int     @id @default(autoincrement())
+  missionId Int
+  mission   Mission @relation(fields: [missionId], references: [id])
+
+  dayIndex          Int // urutan ke-1..N di dalam mission
+  title             String
+  description       String?
+  targetDurationMin Int?
+
+  exercises           MissionSessionExercise[]
+  userMissionSessions UserMissionSession[]
+}
+
+// EXERCISE DI DALAM SESSION TEMPLATE
+model MissionSessionExercise {
+  id               Int            @id @default(autoincrement())
+  missionSessionId Int
+  missionSession   MissionSession @relation(fields: [missionSessionId], references: [id])
+
+  exerciseId Int
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+
+  targetSets Int?
+  targetReps Int?
+}
+
+// MISSION YANG DIPILIH USER (ACTIVE MISSION)
+model UserMission {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  missionId Int
+  mission   Mission @relation(fields: [missionId], references: [id])
+
+  startDate DateTime
+  endDate   DateTime?
+  status    String
+
+  userSessions UserMissionSession[] @relation("UserMissionToSessions")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// JADWAL SESSION PER USER
+model UserMissionSession {
+  id Int @id @default(autoincrement())
+
+  userMissionId Int
+  userMission   UserMission @relation("UserMissionToSessions", fields: [userMissionId], references: [id])
+
+  missionSessionId Int
+  missionSession   MissionSession @relation(fields: [missionSessionId], references: [id])
+
+  scheduledDate    DateTime
+  status           String
+  adherenceScore   Float?
+  difficultyRating Int?
+
+  sessionLog UserSessionLog?
+}
+
+// LOG SESSION (BUKTI 1x LATIHAN)
+model UserSessionLog {
+  id                   Int                @id @default(autoincrement())
+  userMissionSessionId Int                @unique
+  userMissionSession   UserMissionSession @relation(fields: [userMissionSessionId], references: [id])
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  actualDurationMinutes Int?
+  perceivedIntensity    Int?
+  caloriesEstimated     Int?
+  moodBefore            Int?
+  moodAfter             Int?
+  note                  String?
+  proofPhotoUrl         String?
+
+  exerciseLogs UserSessionExerciseLog[]
+  createdAt    DateTime                 @default(now())
+}
+
+// DETAIL SET/REP PER EXERCISE DI SESSION
+model UserSessionExerciseLog {
+  id           Int            @id @default(autoincrement())
+  sessionLogId Int
+  sessionLog   UserSessionLog @relation(fields: [sessionLogId], references: [id])
+
+  exerciseId Int
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+
+  setNumber Int
+  reps      Int
+  weight    Float?
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionLogId])
+  @@index([exerciseId])
+}
